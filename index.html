@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .slider {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+        }
+
+        .arrow {
+            color: white;
+            font-size: 50px;
+            font-weight: 700;
+            height: 50px;
+            cursor: pointer;
+            margin: 10px;
+            margin-top: 75px;
+        }
+
+        .inside {
+            width: 800px;
+        }
+
+        .smallImage {
+            width: 200px;
+            overflow: hidden;
+        }
+
+        .smallImage img {
+            float: left;
+        }
+
+        body {
+            background-color: black;
+        }
+
+        .button {
+            width: 75px;
+            float: left;
+            margin: 10px;
+        }
+
+        .buttons {
+            width: 380px;
+            margin: 0 auto;
+            height: 50px;
+        }
+
+        .game {
+            width: 600px;
+            height: 600px;
+            margin: 0 auto;
+            border: 1px red solid;
+        }
+
+        .tile {
+            background-size: 600px 600px;
+            float: left;
+        }
+
+        .counter {
+            height: 25px;
+            width: 228px;
+            margin: 0 auto;
+            background-color: black;
+            margin-bottom: 10px;
+        }
+
+        .overlay {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+
+        .overlayTextbox {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            top: 33%;
+            background-color: rgba(255, 255, 255, 1);
+            color: black;
+            text-align: center;
+            padding: 50px;
+            margin: 0 auto;
+        }
+
+        table {
+            border: 1px solid black;
+            margin: 10px auto;
+        }
+
+        td {
+            border: 1px solid black;
+        }
+    </style>
+    <script>
+        var clickAndSlide = {
+            gameTab: [],
+            images: ["lotv.jpg", "swarm.jpg", "wings.jpg"],
+            displayedElement: 1,
+            n: 0,
+            image: null,
+            randomI: 0,
+            lastRandomPosition: null,
+            movingAllowed: false,
+            buttonWorking: true,
+            slidingStep: 0,
+            run: function () {
+                document.addEventListener("DOMContentLoaded", () => this.runOnDOMContentLoaded(), false)
+            },
+            runOnDOMContentLoaded: function () {
+                this.generateSlider()
+                this.generateButtons()
+            },
+            generateSlider: function () {
+                var div = document.createElement("div")
+                var image = this.generateSmallImage()
+                var leftArrow = this.generateArrow("<")
+                var rightArrow = this.generateArrow(">")
+                div.classList.add("slider")
+                div.appendChild(leftArrow)
+                div.appendChild(image)
+                div.appendChild(rightArrow)
+                document.body.appendChild(div)
+            },
+            generateArrow: function (char) {
+                var div = document.createElement("div")
+                div.innerText = char
+                div.classList.add("arrow")
+                div.addEventListener("click", this.slide(char))
+                return div
+            },
+            slide: function (char) {
+                return () => {
+                    if (!this.buttonWorking) return;
+                    this.buttonWorking = false
+                    var slider = document.getElementsByClassName("smallImage")[0]
+                    if (char == ">") {
+                        setTimeout(() => this.slideFrame(2))
+                    }
+                    if (char == "<") {
+                        if (this.displayedElement == 1) {
+                            this.displayedElement = this.images.length + 1
+                            slider.scrollLeft = this.images.length * 200
+                        }
+                        setTimeout(() => this.slideFrame(-2))
+                    }
+                }
+
+            },
+            slideFrame: function (vector) {
+                var slider = document.getElementsByClassName("smallImage")[0]
+                if (this.slidingStep < 100) {
+                    slider.scrollLeft += vector
+                    this.slidingStep++;
+                    setTimeout(() => this.slideFrame(vector), 5)
+                }
+                else {
+                    this.buttonWorking = true
+                    this.slidingStep = 0;
+                    if (vector > 0) {
+                        this.displayedElement++;
+                        if (this.displayedElement == this.images.length + 1) {
+                            this.displayedElement = 1;
+                            slider.scrollLeft = 0;
+                        }
+                    }
+                    else {
+                        this.displayedElement--;
+                    }
+                }
+            },
+            generateSmallImage: function () {
+                var main = document.createElement("div")
+                main.classList.add("smallImage");
+                var inside = document.createElement("div")
+                inside.classList.add("inside")
+                for (var i = 0; i < this.images.length; i++) {
+                    var smallImage = new Image(200, 200)
+                    smallImage.src = "img/" + this.images[i]
+                    inside.appendChild(smallImage)
+                }
+                var smallImage = new Image(200, 200)
+                smallImage.src = "img/" + this.images[0]
+                inside.appendChild(smallImage)
+                main.append(inside)
+                return main
+            },
+            generateButtons: function () {
+                var buttons = document.createElement("div")
+                buttons.classList.add("buttons")
+                for (var i = 3; i <= 6; i++) {
+                    var button = document.createElement("button")
+                    button.innerHTML = i + "x" + i
+                    button.classList.add("button")
+                    button.addEventListener("click", this.startGame(i), false)
+                    buttons.appendChild(button)
+                }
+                document.body.appendChild(buttons)
+            },
+            startGame: function (n) {
+                return () => {
+                    if (this.buttonWorking) {
+                        this.turnOffTimer();
+                        this.n = n
+                        this.image = "img/" + this.images[this.displayedElement - 1]
+                        this.generateCounter();
+                        this.generateBaseTab()
+                        this.render()
+                        this.randomize()
+                    }
+                }
+            },
+            turnOffTimer: function () {
+                if (this.interval != null) {
+                    clearInterval(this.interval)
+                }
+            },
+            generateCounter: function () {
+                var lastCounter = document.getElementsByClassName("counter")[0];
+                if (lastCounter != null) lastCounter.remove();
+                var counterDiv = document.createElement("div")
+                counterDiv.classList.add("counter")
+                document.body.append(counterDiv)
+                this.renderCounter("00:00:00.000")
+            },
+            renderCounter: function (timeString) {
+                var counterDiv = document.getElementsByClassName("counter")[0]
+                while (counterDiv.firstChild) {
+                    counterDiv.removeChild(counterDiv.firstChild);
+                }
+                for (var i = 0; i < timeString.length; i++) {
+                    var image = new Image(19, 25);
+                    if (!isNaN(timeString[i]))
+                        image.src = "img/c" + timeString[i] + ".gif"
+                    else if (timeString[i] == ":")
+                        image.src = "img/colon.gif"
+                    else
+                        image.src = "img/dot.gif"
+                    counterDiv.append(image)
+                }
+            },
+            generateBaseTab: function () {
+                this.gameTab = []
+                for (var i = 0; i < this.n + 2; i++) {
+                    this.gameTab.push([])
+                    for (var j = 0; j < this.n + 2; j++) {
+                        if (i == 0 || j == 0 || i == this.n + 1 || j == this.n + 1) {
+                            this.gameTab[i].push(-1)
+                        }
+                        else if (i == this.n && j == this.n) {
+                            this.gameTab[i].push(0)
+                        }
+                        else {
+                            this.gameTab[i].push((i - 1) * this.n + j)
+                        }
+                    }
+                }
+            },
+            render: function () {
+                var lastGameDiv = document.getElementsByClassName("game")
+                if (lastGameDiv.length != 0) lastGameDiv[0].remove();
+                var gameDiv = document.createElement("div")
+                gameDiv.classList.add("game");
+                for (var i = 1; i <= this.n; i++) {
+                    for (var j = 1; j <= this.n; j++) {
+                        var fieldDiv = document.createElement("div")
+                        fieldDiv.classList.add("tile")
+                        fieldDiv.style.width = (600 / this.n).toString() + "px"
+                        fieldDiv.style.height = (600 / this.n).toString() + "px"
+                        var position = this.getBackgroundPosition(j, i)
+                        if (position != null) {
+                            fieldDiv.style.backgroundImage = "url(" + this.image + ")";
+                            fieldDiv.style.backgroundPosition = ((600 / this.n) * -position.x).toString() + "px "
+                                + ((600 / this.n) * -position.y).toString() + "px"
+                        }
+                        else {
+                            fieldDiv.style.backgroundColor = "rgb(0,0,0)"
+                        }
+                        if (this.isPossibleToMove(j, i) && this.movingAllowed) {
+                            fieldDiv.style.cursor = "pointer"
+                            fieldDiv.addEventListener("click", this.playerMove(j, i), false)
+                        }
+                        gameDiv.appendChild(fieldDiv)
+                    }
+                }
+                document.body.appendChild(gameDiv)
+            },
+            getBackgroundPosition: function (x, y) {
+                tileId = this.gameTab[y][x]
+                if (tileId == 0) return null;
+                else {
+                    tileId -= 1
+                    var pos = {
+                        y: Math.floor(tileId / this.n),
+                        x: tileId % this.n
+                    }
+                    return pos;
+                }
+            },
+            randomize: function () {
+                if (this.randomI >= this.n * this.n * 10) {
+                    this.allowMoving();
+                    this.startTimer();
+                    this.render()
+                    this.randomI = 0
+                    this.buttonWorking = true
+                }
+                else {
+                    this.buttonWorking = false;
+                    this.randomI++
+                    var pos = this.choosePositionToMove()
+                    this.move(pos)
+                    setTimeout(() => this.randomize(), 20)
+                }
+            },
+            startTimer: function () {
+                this.startDate = new Date(Date.now())
+                this.interval = setInterval(() => this.updateTimer(), 1)
+            },
+            updateTimer: function () {
+                this.renderCounter(this.getTimeString())
+            },
+            getTimeString: function () {
+                var actualDate = new Date(Date.now());
+                var difference = actualDate.getTime() - this.startDate.getTime();
+                return this.convertMilisecondsToTimestamp(difference)
+            },
+            convertMilisecondsToTimestamp: function (miliseconds) {
+                var date = new Date(miliseconds)
+                this.timeString = ("0" + date.getUTCHours()).slice(-2) + ":" + ("0" + date.getUTCMinutes()).slice(-2)
+                    + ":" + ("0" + date.getUTCSeconds()).slice(-2) + "." + ("00" + date.getUTCMilliseconds()).slice(-3);
+                return this.timeString;
+            },
+            choosePositionToMove: function () {
+                var possibleMoves = this.getPossibleMoves();
+                if (this.lastRandomPosition != null) {
+                    for (var i = 0; i < possibleMoves.length; i++) {
+                        if (possibleMoves[i].x == this.lastRandomPosition.x && possibleMoves[i].y == this.lastRandomPosition.y) {
+                            possibleMoves.splice(i, 1)
+                            break;
+                        }
+                    }
+                }
+                var randomIndex = Math.floor(Math.random() * possibleMoves.length)
+                this.lastRandomPosition = this.findZero()
+                return possibleMoves[randomIndex]
+            },
+            isPossibleToMove: function (x, y) {
+                var possibleMoves = this.getPossibleMoves();
+                for (var i = 0; i < possibleMoves.length; i++) {
+                    if (possibleMoves[i].x == x && possibleMoves[i].y == y) {
+                        return true
+                    }
+                }
+                return false
+            },
+            getPossibleMoves: function () {
+                var zeroPosition = this.findZero()
+                var moves = []
+                if (this.gameTab[zeroPosition.y][zeroPosition.x + 1] != -1) moves.push({ x: zeroPosition.x + 1, y: zeroPosition.y })
+                if (this.gameTab[zeroPosition.y][zeroPosition.x - 1] != -1) moves.push({ x: zeroPosition.x - 1, y: zeroPosition.y })
+                if (this.gameTab[zeroPosition.y + 1][zeroPosition.x] != -1) moves.push({ x: zeroPosition.x, y: zeroPosition.y + 1 })
+                if (this.gameTab[zeroPosition.y - 1][zeroPosition.x] != -1) moves.push({ x: zeroPosition.x, y: zeroPosition.y - 1 })
+                return moves
+            },
+            findZero: function () {
+                for (var i = 0; i < this.gameTab.length; i++) {
+                    for (var j = 0; j < this.gameTab[i].length; j++) {
+                        if (this.gameTab[i][j] == 0) return {
+                            y: i,
+                            x: j
+                        }
+                    }
+                }
+            },
+            allowMoving: function () {
+                this.movingAllowed = true
+            },
+            playerMove: function (x, y) {
+                return () => {
+                    this.move({ x: x, y: y })
+                    if (this.gameIsEnded()) {
+                        this.turnOffTimer();
+                        this.displayMessage();
+                    }
+                }
+            },
+            displayMessage: function () {
+                var overlay = document.createElement("div")
+                overlay.classList.add("overlay")
+                var message = document.createElement("div")
+                message.classList.add("overlayTextbox")
+                message.innerHTML = "Wygrałeś! Twój wynik to: " + this.timeString + "<br />Oto najlepsze osiągnięte czasy: ";
+                var table = this.generateResultsTable()
+                if (table.children.length > 0) {
+                    message.append(table)
+                }
+
+                var button = document.createElement("button")
+                button.innerText = "OK"
+                button.style.marginTop = "10px"
+                button.style.width = "100px"
+                button.style.height = "50px"
+                button.style.cursor = "pointer"
+                button.setAttribute("id", "submit")
+                button.addEventListener("click", () => {
+                    if (this.verifyUsername()) {
+                        if (document.getElementById("record") != null)
+                            this.save()
+                        overlay.remove()
+                        this.movingAllowed = false;
+                        this.render();
+                    }
+
+                }, false)
+
+                message.append(button);
+                overlay.append(message)
+                document.body.append(overlay)
+            },
+            verifyUsername: function () {
+                var record = document.getElementById("record")
+                if (record == null)
+                    return true
+                var text = record.value;
+                if (text.length == 0)
+                    return false
+                if (text.includes(";"))
+                    return false
+                if (text.includes("|"))
+                    return false
+                return true
+            },
+            save: function () {
+                var theImage = this.image.split("/")[1]
+                var n = this.n
+                var results = this.results
+                var record = document.getElementById("record").value
+                var date = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 2)
+                for (var i = 0; i < results.length; i++) {
+                    results[i].username = results[i].username != null ? results[i].username : record
+
+                    document.cookie = theImage + "|" + n + "|" + (i + 1).toString() + "=" + results[i].username + "|" + results[i].time + "; "
+                        + "expires=" + date.toUTCString()
+                }
+
+            },
+            generateResultsTable: function () {
+                var results = this.getResultsFromCookies();
+                var playerPosition = this.getPosition(this.timeString, results)
+                if (playerPosition < 10) {
+                    var record = {
+                        username: null,
+                        time: this.convertStringTimeToIntTime(this.timeString)
+                    }
+                    results.splice(playerPosition, 0, record)
+                    if (results.length > 10) {
+                        results.pop()
+                    }
+                    this.results = results
+                }
+
+                var table = document.createElement("table")
+                for (var i = 0; i < results.length; i++) {
+                    var tr = document.createElement("tr")
+
+                    var indexTd = document.createElement("td")
+                    indexTd.innerText = i + 1
+                    tr.append(indexTd)
+
+                    var nickTd = document.createElement("td")
+                    if (results[i].username == null) {
+                        var input = document.createElement("input")
+                        input.setAttribute("type", "text")
+                        input.setAttribute("id", "record")
+                        input.setAttribute("placeholder", "Podaj nick...")
+                        nickTd.append(input)
+                    }
+                    else {
+                        nickTd.innerText = results[i].username
+                    }
+
+                    tr.append(nickTd)
+
+                    var timeTd = document.createElement("td")
+                    timeTd.innerText = this.convertMilisecondsToTimestamp(results[i].time)
+                    tr.append(timeTd)
+
+                    table.append(tr)
+                }
+                return table
+            },
+            getPosition: function (timestring, results) {
+                var playerResult = this.convertStringTimeToIntTime(timestring)
+                var place = this.verifyPlace(playerResult, results)
+                return place
+            },
+            verifyPlace: function (playerResult, results) {
+                var max = results.length == 10 ? 9 : results.length
+                for (var i = 0; i < max; i++) {
+                    if (i == 0) {
+                        if (results[i].time > playerResult) {
+                            return i;
+                        }
+                    }
+                    else {
+                        if (results[i].time > playerResult && results[i - 1].time < playerResult) {
+                            return i
+                        }
+                    }
+                }
+                return max + 1
+            },
+            getResultsFromCookies: function () {
+                var theImage = this.image.split("/")[1]
+                var n = this.n
+
+                var results = []
+
+                var cookies = document.cookie
+                var records = cookies.split("; ")
+                for (var i = 0; i < records.length; i++) {
+
+                    var splitedRecord = records[i].split("=")
+                    var key = splitedRecord[0]
+                    var value = splitedRecord[1]
+
+                    var splitedKey = key.split("|")
+                    var image = splitedKey[0]
+                    var size = splitedKey[1]
+                    if (theImage == image && n == size) {
+                        var index = splitedKey[2] - 1
+
+                        var splitedValue = value.split("|")
+                        var username = splitedValue[0]
+                        var time = parseInt(splitedValue[1])
+
+                        results[index] = {
+                            username: username,
+                            time: time
+                        }
+                    }
+
+
+                }
+                return results
+            },
+            convertStringTimeToIntTime(timestring) {
+                var array = timestring.split(":")
+                var hour = parseInt(array[0])
+                var minutes = parseInt(array[1])
+                array = array[2].split(".")
+                var seconds = parseInt(array[0])
+                var miliseconds = parseInt(array[1])
+                return miliseconds + seconds * 1000 + minutes * 60 * 1000 + hour * 3600 * 1000
+            },
+            gameIsEnded: function (x, y) {
+                for (var i = 1; i <= this.n; i++) {
+                    for (var j = 1; j <= this.n; j++) {
+                        if (i == this.n && j == this.n) {
+                            if (this.gameTab[i][j] != 0) return false;
+                        }
+                        else {
+                            if (this.gameTab[i][j] != (i - 1) * this.n + j) return false;
+                        }
+                    }
+                }
+                return true;
+            },
+            move: function (pos) {
+                var zero = this.findZero();
+                var value = this.gameTab[pos.y][pos.x]
+                this.gameTab[zero.y][zero.x] = value
+                this.gameTab[pos.y][pos.x] = 0
+                this.render();
+            }
+
+        }
+        document.onload = clickAndSlide.run()
+
+
+    </script>
+</head>
+
+<body>
+</body>
+
+</html>
